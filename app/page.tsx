@@ -8,10 +8,11 @@ import InsightsPanel from "@/components/insights-panel"
 import ChatDrawer from "@/components/chat-drawer"
 import ExportModal from "@/components/export-modal"
 import MobileInsightsSheet from "@/components/mobile-insights-sheet"
+import MenuAnalysisDrawer from "@/components/menu-analysis-drawer"
 import {
   Upload, Download, Activity, Shield,
   HeartPulse, FileText, ArrowRight,
-  Lock, Clock, Droplets, Info
+  Lock, Clock, Droplets, Info, ChefHat, Utensils
 } from "lucide-react"
 import { OcrUnlockDialog } from "@/components/ocr-unlock-dialog"
 
@@ -48,6 +49,8 @@ export default function Home() {
   const [ocrUnlocked, setOcrUnlocked] = useState(false)
   const [ocrPassphrase, setOcrPassphrase] = useState("")
   const [ocrDialogOpen, setOcrDialogOpen] = useState(false)
+  const [menuAnalysisOpen, setMenuAnalysisOpen] = useState(false)
+  const [patientSummary, setPatientSummary] = useState<string>("")
 
   // Storage key for persisting results
   const STORAGE_KEY = "bloodparser_results"
@@ -99,6 +102,22 @@ export default function Home() {
       }
     }
   }, [testData])
+
+  // Fetch patient summary
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const res = await fetch("/api/patient/insight")
+        if (res.ok) {
+          const data = await res.json()
+          setPatientSummary(data.summary)
+        }
+      } catch (err) {
+        console.error("Failed to fetch summary:", err)
+      }
+    }
+    fetchSummary()
+  }, [])
 
   const handleUploadComplete = (data: any) => {
     setTestData(data)
@@ -195,30 +214,43 @@ export default function Home() {
 
           <div className="flex items-center gap-2">
             {step === "results" && (
-              <>
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setExportOpen(true)}
-                  className="px-3 md:px-4 py-2 rounded-xl bg-secondary hover:bg-secondary/80 border border-border transition-all flex items-center gap-2 text-sm"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="font-medium hidden sm:inline">Export</span>
-                </motion.button>
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleReset}
-                  className="px-3 md:px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center gap-2 text-sm shadow-lg glow-primary"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span className="font-medium hidden sm:inline">New Report</span>
-                </motion.button>
-              </>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setExportOpen(true)}
+                className="px-3 md:px-4 py-2 rounded-xl bg-secondary hover:bg-secondary/80 border border-border transition-all flex items-center gap-2 text-sm"
+              >
+                <Download className="w-4 h-4" />
+                <span className="font-medium hidden sm:inline">Export</span>
+              </motion.button>
+            )}
+
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setMenuAnalysisOpen(true)}
+              className="px-3 md:px-4 py-2 rounded-xl bg-accent/20 hover:bg-accent/30 border border-accent/30 transition-all flex items-center gap-2 text-sm text-accent-foreground"
+            >
+              <ChefHat className="w-4 h-4" />
+              <span className="font-medium hidden sm:inline">Menu Advisor</span>
+            </motion.button>
+
+            {step === "results" && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleReset}
+                className="px-3 md:px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center gap-2 text-sm shadow-lg glow-primary"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="font-medium hidden sm:inline">New Report</span>
+              </motion.button>
             )}
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
@@ -364,6 +396,13 @@ export default function Home() {
                           description: "Understand your health with clear explanations",
                           step: "03"
                         },
+                        {
+                          icon: Utensils,
+                          title: "Menu Advisor",
+                          description: "Check restaurant menus for healthy food choices",
+                          step: "04",
+                          action: () => setMenuAnalysisOpen(true)
+                        },
                       ].map((feature, index) => (
                         <motion.div
                           key={index}
@@ -372,7 +411,10 @@ export default function Home() {
                           transition={{ delay: 0.8 + index * 0.1 }}
                           className="group relative"
                         >
-                          <div className="relative p-6 rounded-2xl card-warm hover-lift">
+                          <div 
+                            className={`relative p-6 rounded-2xl card-warm hover-lift ${feature.action ? "cursor-pointer" : ""}`}
+                            onClick={feature.action}
+                          >
                             {/* Step number */}
                             <div className="absolute top-4 right-4 text-5xl font-serif font-light text-primary/10">
                               {feature.step}
@@ -381,7 +423,10 @@ export default function Home() {
                             <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
                               <feature.icon className="w-6 h-6 text-primary" />
                             </div>
-                            <h4 className="font-serif font-medium text-lg text-foreground mb-2">{feature.title}</h4>
+                            <h4 className="font-serif font-medium text-lg text-foreground mb-2">
+                              {feature.title}
+                              {feature.action && <ArrowRight className="w-4 h-4 inline ml-2 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />}
+                            </h4>
                             <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                           </div>
                         </motion.div>
@@ -481,6 +526,13 @@ export default function Home() {
           data={testData}
         />
       )}
+
+      {/* Menu Analysis Drawer */}
+      <MenuAnalysisDrawer
+        isOpen={menuAnalysisOpen}
+        onOpenChange={setMenuAnalysisOpen}
+        healthSummary={patientSummary || (testData ? `Analyzing results and preparing summary...` : undefined)}
+      />
 
       {/* Mobile Insights Sheet */}
       {step === "results" && testData && (
