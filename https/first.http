@@ -1,0 +1,73 @@
+### 
+
+
+###
+
+POST https://nick-2x-Lab-report-analysis.hf.space/ocr HTTP/1.1
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="test_image.png"
+Content-Type: image/png
+
+file=@C:/Users/dell/Downloads/thyroid-profile-test.png
+--boundary--
+
+
+### 
+
+POST https://nick-2x-Lab-report-analysis.hf.space/ocr HTTP/1.1
+Content-Type: multipart/form-data
+
+file=@C:/Users/dell/Downloads/thyroid-profile-test.png
+
+
+### 
+
+POST https://nick-2x-Lab-report-analysis.hf.space/ocr HTTP/1.1
+
+file=@C:/Users/dell/Downloads/thyroid-profile-test.png
+
+
+### 
+
+POST https://nick-2x-Lab-report-analysis.hf.space/ocr HTTP/1.1
+Content-Type: multipart/form-data
+
+
+###
+
+GET : @C:/Users/dell/Downloads/thyroid-profile-test.png HTTP/1.1
+
+
+### 
+
+POST https://nick-2x-Lab-report-analysis.hf.space/ocr HTTP/1.1
+
+file=@C:/Users/dell/Downloads/thyroid-profile-test.png
+
+
+### 
+
+POST https://nick-2x-Lab-report-analysis.hf.space/ocr HTTP/1.1
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="thyroid-profile-test.png"
+Content-Type: image/png
+
+< C:/Users/dell/Downloads/thyroid-profile-test.png
+--boundary--
+
+
+### 
+
+POST https://nick-2x-Lab-report-analysis.hf.space/ocr HTTP/1.1
+Content-Type: multipart/form-data; boundary=RequestBoundary
+
+--RequestBoundary
+Content-Disposition: form-data; name="file"; filename="thyroid-profile-test.png"
+Content-Type: image/png
+
+< C:/Users/dell/Downloads/thyroid-profile-test.png
+--RequestBoundary--
