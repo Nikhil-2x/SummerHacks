@@ -396,13 +396,13 @@ export default function Home() {
                           description: "Understand your health with clear explanations",
                           step: "03"
                         },
-                        {
-                          icon: Utensils,
-                          title: "Menu Advisor",
-                          description: "Check restaurant menus for healthy food choices",
-                          step: "04",
-                          action: () => setMenuAnalysisOpen(true)
-                        },
+                        // {
+                        //   icon: Utensils,
+                        //   title: "Menu Advisor",
+                        //   description: "Check restaurant menus for healthy food choices",
+                        //   step: "04",
+                        //   action: () => setMenuAnalysisOpen(true)
+                        // },
                       ].map((feature, index) => (
                         <motion.div
                           key={index}
@@ -411,7 +411,7 @@ export default function Home() {
                           transition={{ delay: 0.8 + index * 0.1 }}
                           className="group relative"
                         >
-                          <div 
+                          <div
                             className={`relative p-6 rounded-2xl card-warm hover-lift ${feature.action ? "cursor-pointer" : ""}`}
                             onClick={feature.action}
                           >
