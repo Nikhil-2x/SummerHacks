@@ -1,4 +1,4 @@
-<img width="1121" height="120" alt="image" src="https://github.com/user-attachments/assets/bb123035-af55-4365-9f8d-30511d80ff3c" /># LabLense
+
 
 A modern web application built with Next.js for parsing and analyzing blood reports using advanced OCR technology and AI-powered insights. This application allows users to upload blood report images, extract data via OCR, analyze results with AI, and engage in conversational chat for personalized health insights with real time voice calling agent.
 
