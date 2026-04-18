@@ -12,30 +12,10 @@ import MenuAnalysisDrawer from "@/components/menu-analysis-drawer"
 import {
   Upload, Download, Activity, Shield,
   HeartPulse, FileText, ArrowRight,
-  Lock, Clock, Droplets, Info, ChefHat, Utensils
+  Lock, Clock, Droplets, Info, ChefHat, Utensils, Box
 } from "lucide-react"
 import { OcrUnlockDialog } from "@/components/ocr-unlock-dialog"
-
-// Organic floating shape component
-function OrganicBlob({ className, delay = 0 }: { className?: string; delay?: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{
-        opacity: [0.3, 0.5, 0.3],
-        scale: [1, 1.1, 1],
-        rotate: [0, 180, 360],
-      }}
-      transition={{
-        delay,
-        duration: 20,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }}
-      className={`absolute rounded-full blur-3xl ${className}`}
-    />
-  )
-}
+import OrganicBlob from "@/components/organic-blob"
 
 export default function Home() {
   const [step, setStep] = useState<"upload" | "results">("upload")
@@ -213,6 +193,18 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2">
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => window.location.href = "/visualizer"}
+              className="px-3 md:px-4 py-2 rounded-xl bg-accent/20 hover:bg-accent/30 border border-accent/30 transition-all flex items-center gap-2 text-sm text-accent-foreground"
+            >
+              <Box className="w-4 h-4" />
+              <span className="font-medium hidden sm:inline">3D Human</span>
+            </motion.button>
+
             {step === "results" && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -252,6 +244,18 @@ export default function Home() {
                 <span className="font-medium hidden sm:inline">New Report</span>
               </motion.button>
             )}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => window.location.href = "/clinics"}
+              className="px-3 md:px-4 py-2 rounded-xl bg-secondary/60 hover:bg-secondary border border-border/60 transition-all flex items-center gap-2 text-xs md:text-sm"
+            >
+              <HeartPulse className="w-3 h-3 md:w-4 md:h-4" />
+              <span className="font-medium hidden sm:inline">Medical Care</span>
+              <span className="font-medium sm:hidden">Care</span>
+            </motion.button>
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -391,18 +395,19 @@ export default function Home() {
                           step: "02"
                         },
                         {
-                          icon: HeartPulse,
-                          title: "Health Insights",
-                          description: "Understand your health with clear explanations",
-                          step: "03"
+                          icon: Box,
+                          title: "3D Visualizer",
+                          description: "Navigate your anatomy in high-fidelity 3D",
+                          step: "03",
+                          action: () => window.location.href = "/visualizer"
                         },
-                        // {
-                        //   icon: Utensils,
-                        //   title: "Menu Advisor",
-                        //   description: "Check restaurant menus for healthy food choices",
-                        //   step: "04",
-                        //   action: () => setMenuAnalysisOpen(true)
-                        // },
+                        {
+                          icon: HeartPulse,
+                          title: "Medical Care",
+                          description: "Find specialists and consult our AI Doctor",
+                          step: "04",
+                          action: () => window.location.href = "/clinics"
+                        },
                       ].map((feature, index) => (
                         <motion.div
                           key={index}
