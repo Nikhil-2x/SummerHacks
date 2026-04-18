@@ -1,5 +1,5 @@
 
-
+**LabLens**
 A modern web application built with Next.js for parsing and analyzing blood reports using advanced OCR technology and AI-powered insights. This application allows users to upload blood report images, extract data via OCR, analyze results with AI, and engage in conversational chat for personalized health insights with real time voice calling agent.
 
 ## Features
