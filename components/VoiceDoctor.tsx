@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -43,6 +45,21 @@ export default function VoiceDoctor() {
     vapi.start({
       assistant: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
 
+      voice: {
+    model: "eleven_multilingual_v2",
+    voiceId: "sarah",
+    autoMode: true,
+    provider: "11labs",
+    // stability: 0.5,
+    // similarityBoost: 0.75
+  },
+
+   transcriber: {
+    model: "nova-3",
+    language: "multi",
+    // numerals: false,
+    provider: "deepgram"
+  },
       // 🔥 PASS LAB REPORT DATA HERE (DYNAMIC LATER)
       metadata: {
         report: "Hemoglobin is low, CRP is high"
