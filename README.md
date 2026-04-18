@@ -1,4 +1,4 @@
-# LabLense
+<img width="1121" height="120" alt="image" src="https://github.com/user-attachments/assets/bb123035-af55-4365-9f8d-30511d80ff3c" /># LabLense
 
 A modern web application built with Next.js for parsing and analyzing blood reports using advanced OCR technology and AI-powered insights. This application allows users to upload blood report images, extract data via OCR, analyze results with AI, and engage in conversational chat for personalized health insights with real time voice calling agent.
 
@@ -8,10 +8,10 @@ A modern web application built with Next.js for parsing and analyzing blood repo
 - **AI-Powered Analysis**: Uses Google Generative AI for intelligent analysis of blood parameters
 - **Real-time Multilingual Calling Agent**: Interactive multilingual calling interface powered by Vapi AI for health consultations
 - **User Authentication**: Secure authentication system with session management
-- **Data Visualization**: Comprehensive results and insights panels with charts and metrics
-- **Export Functionality**: Export analysis results in various formats
+- **Doctor Prep Generator**: Consultation Cheat – Sheet – what to ask, what to mention and what to prioritize.
+- **Nutrigenomic Menu Overlay**: Personalized dietary insights based on your specific metabolic markers
 - **Mobile Responsive**: Optimized for both desktop and mobile devices
-- **Database Integration**: PostgreSQL database with Prisma ORM for data persistence
+- **Specialist Navigator**: If your report shows specific liver markers, the AI suggests the top- rated local hepatologists.
 
 ## Tech Stack
 
