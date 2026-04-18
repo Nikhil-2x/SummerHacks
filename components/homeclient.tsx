@@ -21,8 +21,10 @@ import {
   Clock,
   Droplets,
   Info,
+  ChefHat,
 } from "lucide-react";
 import { OcrUnlockDialog } from "@/components/ocr-unlock-dialog";
+import MenuAnalysisDrawer from "./menu-analysis-drawer";
 
 // Organic floating shape component
 function OrganicBlob({
@@ -63,6 +65,8 @@ export default function HomeClient({ session }: { session: any }) {
   const [ocrUnlocked, setOcrUnlocked] = useState(false);
   const [ocrPassphrase, setOcrPassphrase] = useState("");
   const [ocrDialogOpen, setOcrDialogOpen] = useState(false);
+  const [menuAnalysisOpen, setMenuAnalysisOpen] = useState(false);
+  const [patientSummary, setPatientSummary] = useState<string>("");
 
   // Storage key for persisting results
   const STORAGE_KEY = "bloodparser_results";
@@ -114,6 +118,21 @@ export default function HomeClient({ session }: { session: any }) {
       }
     }
   }, [testData]);
+  // Fetch patient summary
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const res = await fetch("/api/patient/insight");
+        if (res.ok) {
+          const data = await res.json();
+          setPatientSummary(data.summary);
+        }
+      } catch (err) {
+        console.error("Failed to fetch summary:", err);
+      }
+    };
+    fetchSummary();
+  }, []);
 
   const handleUploadComplete = (data: any) => {
     setTestData(data);
@@ -214,16 +233,10 @@ export default function HomeClient({ session }: { session: any }) {
 
           <div className="flex items-center gap-2">
             <Link
-              href="/login"
-              className="px-3 md:px-4 py-2 rounded-xl bg-secondary/60 hover:bg-secondary border border-border/60 transition-all text-xs md:text-sm font-medium"
-            >
-              Login
-            </Link>
-            <Link
               href="/signup"
               className="px-3 md:px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all text-xs md:text-sm font-medium shadow-lg glow-primary"
             >
-              Sign up
+              Logout
             </Link>
             {step === "results" && (
               <>
@@ -243,17 +256,47 @@ export default function HomeClient({ session }: { session: any }) {
                   animate={{ opacity: 1, scale: 1 }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={handleReset}
-                  className="px-3 md:px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center gap-2 text-sm shadow-lg glow-primary"
+                  onClick={() => setMenuAnalysisOpen(true)}
+                  className="px-3 md:px-4 py-2 rounded-xl bg-accent/20 hover:bg-accent/30 border border-accent/30 transition-all flex items-center gap-2 text-sm text-accent-foreground"
                 >
-                  <Upload className="w-4 h-4" />
+                  <ChefHat className="w-4 h-4" />
                   <span className="font-medium hidden sm:inline">
-                    New Report
+                    Menu Advisor
                   </span>
+                </motion.button>
+
+                {step === "results" && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleReset}
+                    className="px-3 md:px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center gap-2 text-sm shadow-lg glow-primary"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span className="font-medium hidden sm:inline">
+                      New Report
+                    </span>
+                  </motion.button>
+                )}
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => (window.location.href = "/clinics")}
+                  className="px-3 md:px-4 py-2 rounded-xl bg-secondary/60 hover:bg-secondary border border-border/60 transition-all flex items-center gap-2 text-xs md:text-sm"
+                >
+                  <HeartPulse className="w-3 h-3 md:w-4 md:h-4" />
+                  <span className="font-medium hidden sm:inline">
+                    Medical Care
+                  </span>
+                  <span className="font-medium sm:hidden">Care</span>
                 </motion.button>
               </>
             )}
-            <motion.button
+            {/* <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               whileHover={{ scale: 1.02 }}
@@ -268,7 +311,7 @@ export default function HomeClient({ session }: { session: any }) {
               <span className="font-medium sm:hidden">
                 {ocrUnlocked ? "Secure" : "Secure mode"}
               </span>
-            </motion.button>
+            </motion.button> */}
           </div>
         </div>
       </motion.header>
@@ -398,10 +441,11 @@ export default function HomeClient({ session }: { session: any }) {
                         },
                         {
                           icon: HeartPulse,
-                          title: "Health Insights",
+                          title: "Medical Core",
                           description:
-                            "Understand your health with clear explanations",
+                            "Find specialists and consult our AI Doctor",
                           step: "03",
+                          action: () => (window.location.href = "/clinics"),
                         },
                       ].map((feature, index) => (
                         <motion.div
@@ -422,6 +466,9 @@ export default function HomeClient({ session }: { session: any }) {
                             </div>
                             <h4 className="font-serif font-medium text-lg text-foreground mb-2">
                               {feature.title}
+                              {feature.action && (
+                                <ArrowRight className="w-4 h-4 inline ml-2 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
+                              )}
                             </h4>
                             <p className="text-sm text-muted-foreground leading-relaxed">
                               {feature.description}
@@ -524,6 +571,15 @@ export default function HomeClient({ session }: { session: any }) {
           data={testData}
         />
       )}
+      {/* Menu Analysis Drawer */}
+      <MenuAnalysisDrawer
+        isOpen={menuAnalysisOpen}
+        onOpenChange={setMenuAnalysisOpen}
+        healthSummary={
+          patientSummary ||
+          (testData ? `Analyzing results and preparing summary...` : undefined)
+        }
+      />
 
       {/* Mobile Insights Sheet */}
       {step === "results" && testData && (
