@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { OcrUnlockDialog } from "@/components/ocr-unlock-dialog";
 import MenuAnalysisDrawer from "./menu-analysis-drawer";
+import VoiceDoctor from "./VoiceDoctor";
 
 // Organic floating shape component
 function OrganicBlob({
@@ -67,6 +68,7 @@ export default function HomeClient({ session }: { session: any }) {
   const [ocrDialogOpen, setOcrDialogOpen] = useState(false);
   const [menuAnalysisOpen, setMenuAnalysisOpen] = useState(false);
   const [patientSummary, setPatientSummary] = useState<string>("");
+  const [voiceOpen, setVoiceOpen] = useState(false);
 
   // Storage key for persisting results
   const STORAGE_KEY = "bloodparser_results";
@@ -280,6 +282,17 @@ export default function HomeClient({ session }: { session: any }) {
                     </span>
                   </motion.button>
                 )}
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setVoiceOpen(true)}
+                  className="px-3 md:px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all flex items-center gap-2 text-xs md:text-sm"
+                >
+                  <span className="font-medium hidden sm:inline">AI Call</span>
+                  <span className="font-medium sm:hidden">Call</span>
+                </motion.button>
                 <motion.button
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -603,6 +616,23 @@ export default function HomeClient({ session }: { session: any }) {
         >
           <Info className="w-5 h-5 text-primary" />
         </motion.button>
+      )}
+
+      {voiceOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-background p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-base font-semibold">AI Voice Doctor</h3>
+              <button
+                onClick={() => setVoiceOpen(false)}
+                className="rounded-md border px-3 py-1 text-sm hover:bg-secondary"
+              >
+                Close
+              </button>
+            </div>
+            <VoiceDoctor />
+          </div>
+        </div>
       )}
     </main>
   );

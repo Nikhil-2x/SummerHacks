@@ -1,20 +1,24 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { GoogleGenerativeAI } from "@google/generative-ai"
-import { runGlmOcr } from "@/lib/glm-ocr"
+import { type NextRequest, NextResponse } from "next/server";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { runGlmOcr } from "@/lib/glm-ocr";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 
-const apiKey = process.env.GEMINI_API_KEY
+const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
-  console.warn("Warning: GEMINI_API_KEY not set in environment variables")
+  console.warn("Warning: GEMINI_API_KEY not set in environment variables");
 }
 
-const genAI = new GoogleGenerativeAI(apiKey || "")
+const genAI = new GoogleGenerativeAI(apiKey || "");
 
 // Configurable model names
-const GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-flash-latest"
-const GEMINI_VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-flash-latest"
+const GEMINI_TEXT_MODEL =
+  process.env.GEMINI_TEXT_MODEL || "gemini-flash-latest";
+const GEMINI_VISION_MODEL =
+  process.env.GEMINI_VISION_MODEL || "gemini-flash-latest";
 
-export const runtime = "nodejs"
-export const maxDuration = 60
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const extractionPromptBase = `
 You are a specialized medical data extraction AI analyzing a blood report. Extract ALL blood test parameters.
@@ -42,7 +46,7 @@ RULES:
 DO NOT INCLUDE administrative data (patient info, dates, addresses).
 EXTRACT every medical test parameter present.
 Return ONLY valid JSON, no markdown or explanation.
-`
+`;
 
 function buildTextExtractionPrompt(ocrMarkdown: string): string {
   return `${extractionPromptBase}
@@ -52,112 +56,148 @@ Here is the OCR text content of the blood test report between the markers. Note:
 <REPORT>
 ${ocrMarkdown}
 </REPORT>
-`
+`;
 }
 
 function extractTestsFromResponse(raw: string) {
-  let jsonMatch = raw.match(/\{[\s\S]*\}/)
+  let jsonMatch = raw.match(/\{[\s\S]*\}/);
 
   // Try to extract JSON from markdown code block if direct match fails
   if (!jsonMatch) {
-    const codeBlockMatch = raw.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/)
+    const codeBlockMatch = raw.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
     if (codeBlockMatch) {
-      jsonMatch = [codeBlockMatch[1]]
+      jsonMatch = [codeBlockMatch[1]];
     }
   }
 
   if (!jsonMatch) {
-    console.error("[analyze] Could not parse JSON from response:", raw)
+    console.error("[analyze] Could not parse JSON from response:", raw);
     throw new Error(
       "Could not parse blood test data from the report. Please ensure the report is clear and contains blood test results.",
-    )
+    );
   }
 
-  const data = JSON.parse(jsonMatch[0])
-  const tests = data.tests || []
+  const data = JSON.parse(jsonMatch[0]);
+  const tests = data.tests || [];
 
-  console.log("[analyze] Successfully parsed", tests.length, "test results")
+  console.log("[analyze] Successfully parsed", tests.length, "test results");
 
   if (tests.length === 0) {
     throw new Error(
       "No blood test results found in the uploaded file. Please upload a clear image of a blood test report.",
-    )
+    );
   }
 
-  return tests
+  return tests;
+}
+
+function normalizeTest(test: any) {
+  return {
+    testName: String(test.test_name ?? test.testName ?? "Unknown Test"),
+    value: String(test.value ?? ""),
+    unit: test.unit ? String(test.unit) : null,
+    range: test.normal_range
+      ? String(test.normal_range)
+      : test.range
+        ? String(test.range)
+        : null,
+    status: String(test.status ?? "Normal"),
+    category: String(test.category ?? "Other"),
+  };
 }
 
 export async function POST(request: NextRequest) {
   try {
     if (!apiKey) {
       return NextResponse.json(
-        { error: "API key not configured. Please set GEMINI_API_KEY environment variable." },
+        {
+          error:
+            "API key not configured. Please set GEMINI_API_KEY environment variable.",
+        },
         { status: 500 },
-      )
+      );
     }
 
-    console.log("[analyze] Starting file analysis")
+    console.log("[analyze] Starting file analysis");
 
-    const formData = await request.formData()
-    const file = formData.get("file") as File
-    const ocrEnabledRaw = formData.get("ocrEnabled")
-    const passphraseRaw = formData.get("passphrase")
+    const formData = await request.formData();
+    const file = formData.get("file") as File;
+    const ocrEnabledRaw = formData.get("ocrEnabled");
+    const passphraseRaw = formData.get("passphrase");
 
-    const ocrEnabled = typeof ocrEnabledRaw === "string" && ocrEnabledRaw === "true"
-    const passphrase = typeof passphraseRaw === "string" ? passphraseRaw : ""
+    const ocrEnabled =
+      typeof ocrEnabledRaw === "string" && ocrEnabledRaw === "true";
+    const passphrase = typeof passphraseRaw === "string" ? passphraseRaw : "";
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    console.log("[analyze] File received:", file.name, file.type, file.size, "bytes")
+    console.log(
+      "[analyze] File received:",
+      file.name,
+      file.type,
+      file.size,
+      "bytes",
+    );
 
     if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: "File too large. Maximum size is 10MB" }, { status: 413 })
+      return NextResponse.json(
+        { error: "File too large. Maximum size is 10MB" },
+        { status: 413 },
+      );
     }
 
     // Convert file to base64
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const base64 = buffer.toString("base64")
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64 = buffer.toString("base64");
 
-    console.log("[analyze] File converted to base64")
+    console.log("[analyze] File converted to base64");
 
-    let tests: any[] = []
+    let tests: any[] = [];
 
     if (ocrEnabled && passphrase) {
-      console.log("[analyze] OCR mode requested")
+      console.log("[analyze] OCR mode requested");
 
-      const secret = process.env.OCR_PASSPHRASE
+      const secret = process.env.OCR_PASSPHRASE;
       if (!secret) {
-        console.warn("[analyze] OCR_PASSPHRASE not set; cannot use OCR mode")
+        console.warn("[analyze] OCR_PASSPHRASE not set; cannot use OCR mode");
         return NextResponse.json(
           { error: "OCR mode is not configured on the server." },
           { status: 500 },
-        )
+        );
       }
 
       if (passphrase !== secret) {
-        return NextResponse.json({ error: "Invalid OCR passphrase" }, { status: 403 })
+        return NextResponse.json(
+          { error: "Invalid OCR passphrase" },
+          { status: 403 },
+        );
       }
 
       // 1) Run OCR via GLM-OCR
-      const { markdown } = await runGlmOcr({ base64, mimeType: file.type })
-      console.log("[analyze] OCR completed, length:", markdown.length)
+      const { markdown } = await runGlmOcr({ base64, mimeType: file.type });
+      console.log("[analyze] OCR completed, length:", markdown.length);
 
       // 2) Use Gemini text model to extract structured JSON from OCR markdown
-      const textModel = genAI.getGenerativeModel({ model: GEMINI_TEXT_MODEL })
-      const prompt = buildTextExtractionPrompt(markdown)
-      const result = await textModel.generateContent(prompt)
-      const responseText = result.response.text()
-      console.log("[analyze] Gemini text response received:", responseText.substring(0, 200))
+      const textModel = genAI.getGenerativeModel({ model: GEMINI_TEXT_MODEL });
+      const prompt = buildTextExtractionPrompt(markdown);
+      const result = await textModel.generateContent(prompt);
+      const responseText = result.response.text();
+      console.log(
+        "[analyze] Gemini text response received:",
+        responseText.substring(0, 200),
+      );
 
-      tests = extractTestsFromResponse(responseText)
+      tests = extractTestsFromResponse(responseText);
     } else {
-      console.log("[analyze] Using default Gemini Vision pipeline")
+      console.log("[analyze] Using default Gemini Vision pipeline");
 
       // Use Gemini Vision to extract blood test data directly from the image
-      const visionModel = genAI.getGenerativeModel({ model: GEMINI_VISION_MODEL })
+      const visionModel = genAI.getGenerativeModel({
+        model: GEMINI_VISION_MODEL,
+      });
 
       const result = await visionModel.generateContent([
         extractionPromptBase,
@@ -167,12 +207,23 @@ export async function POST(request: NextRequest) {
             mimeType: file.type,
           },
         },
-      ])
+      ]);
 
-      const responseText = result.response.text()
-      console.log("[analyze] Gemini vision response received:", responseText.substring(0, 200))
+      const responseText = result.response.text();
+      console.log(
+        "[analyze] Gemini vision response received:",
+        responseText.substring(0, 200),
+      );
 
-      tests = extractTestsFromResponse(responseText)
+      tests = extractTestsFromResponse(responseText);
+    }
+
+    const session = await auth.api.getSession({
+      headers: request.headers,
+    });
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Calculate summary
@@ -180,20 +231,36 @@ export async function POST(request: NextRequest) {
       total: tests.length,
       normal: tests.filter((r: any) => r.status === "Normal").length,
       abnormal: tests.filter((r: any) => r.status !== "Normal").length,
-    }
+    };
 
-    return NextResponse.json({ tests, summary })
+    const normalizedTests = tests.map(normalizeTest);
+
+    const savedReport = await db.labReport.create({
+      data: {
+        userId: session.user.id,
+        totalTests: summary.total,
+        normalCount: summary.normal,
+        abnormalCount: summary.abnormal,
+        tests: {
+          create: normalizedTests,
+        },
+      },
+      select: { id: true },
+    });
+
+    return NextResponse.json({ tests, summary, reportId: savedReport.id });
   } catch (error) {
-    console.error("[analyze] Error analyzing file:", error)
+    console.error("[analyze] Error analyzing file:", error);
 
-    const errorMessage = error instanceof Error ? error.message : "Failed to analyze file"
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to analyze file";
     return NextResponse.json(
       {
         error: errorMessage,
-        details: process.env.NODE_ENV === "development" ? String(error) : undefined,
+        details:
+          process.env.NODE_ENV === "development" ? String(error) : undefined,
       },
       { status: 500 },
-    )
+    );
   }
 }
-

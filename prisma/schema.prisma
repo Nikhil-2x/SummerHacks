@@ -15,18 +15,48 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String      @id
   name          String
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean     @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   sessions      Session[]
   accounts      Account[]
+  labReports    LabReport[]
 
   @@unique([email])
   @@map("user")
+}
+
+model LabReport {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  totalTests    Int
+  normalCount   Int
+  abnormalCount Int
+  tests         LabTest[]
+
+  @@index([userId])
+  @@map("lab_report")
+}
+
+model LabTest {
+  id       String    @id @default(cuid())
+  reportId String
+  report   LabReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  testName String
+  value    String
+  unit     String?
+  range    String?
+  status   String
+  category String
+
+  @@index([reportId])
+  @@map("lab_test")
 }
 
 model Session {

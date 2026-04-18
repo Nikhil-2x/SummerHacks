@@ -3,12 +3,43 @@
 import { useEffect, useState } from "react";
 import Vapi from "@vapi-ai/web";
 
-const REPORT_DATA = "Hemoglobin: 9.2 g/dL (Low), CRP: 18 mg/L (High), WBC: 7.4 (Normal)";
+type LabTest = {
+  id: string;
+  testName: string;
+  value: string;
+  unit: string | null;
+  range: string | null;
+  status: string;
+  category: string;
+};
 
-export default function VoiceDoctor() {
+type LabReport = {
+  id: string;
+  createdAt: string;
+  tests: LabTest[];
+};
+
+export function formatReportForAI(tests: LabTest[]) {
+  if (!tests.length) {
+    return "No report context is currently available.";
+  }
+
+  return tests
+    .map((test) => {
+      const unit = test.unit ? ` ${test.unit}` : "";
+      return `${test.testName} is ${test.value}${unit} (${test.status})`;
+    })
+    .join(", ");
+}
+
+export default function VoiceDoctor({ reportId }: { reportId?: string }) {
   const [vapi, setVapi] = useState<Vapi | null>(null);
   const [isCallActive, setIsCallActive] = useState(false);
   const [status, setStatus] = useState("Idle");
+  const [reports, setReports] = useState<LabReport[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const [contextText, setContextText] = useState("");
+  const [hasFetchedContext, setHasFetchedContext] = useState(false);
 
   useEffect(() => {
     const vapiInstance = new Vapi(process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY!);
@@ -29,8 +60,66 @@ export default function VoiceDoctor() {
     setVapi(vapiInstance);
   }, []);
 
+  useEffect(() => {
+    const fetchReports = async () => {
+      setIsLoadingReports(true);
+      setHasFetchedContext(false);
+
+      try {
+        if (reportId) {
+          const response = await fetch(`/api/reports/${reportId}`);
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to fetch report");
+          }
+
+          setReports([data.report]);
+          setHasFetchedContext(true);
+          return;
+        }
+
+        const response = await fetch("/api/reports?limit=2");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch reports");
+        }
+
+        setReports(data.reports || []);
+        setHasFetchedContext(true);
+      } catch (error) {
+        console.error("Failed to load report context:", error);
+        setReports([]);
+        setContextText("");
+      } finally {
+        setIsLoadingReports(false);
+      }
+    };
+
+    fetchReports();
+  }, [reportId]);
+
+  useEffect(() => {
+    if (!reports.length) {
+      setContextText(
+        "No previous lab reports were found for this user. Ask the user to upload a report first so you can provide personalized advice.",
+      );
+      return;
+    }
+
+    const withLabel = reports.map((report, index) => {
+      const heading = `Report ${index + 1} (${new Date(report.createdAt).toLocaleDateString()})`;
+      const body = formatReportForAI(report.tests);
+      return `${heading}: ${body}`;
+    });
+
+    setContextText(withLabel.join("\n"));
+  }, [reports]);
+
   const startCall = async () => {
-    if (!vapi) return;
+    if (!vapi || isLoadingReports || !contextText || !hasFetchedContext) return;
+
     setStatus("⏳ Connecting...");
 
     try {
@@ -70,10 +159,10 @@ MEDICAL BEHAVIOR
 -------------------------
 LAB REPORT
 -------------------------
-${REPORT_DATA}
+${contextText}
 
 When asked "what is my report" or "mera report kya hai", read these values clearly.
-Never say you don't have the report.
+If no report context is available, politely say: "You should first upload some report to get me context.".
 
 -------------------------
 TONE
@@ -120,9 +209,10 @@ TONE
       {!isCallActive ? (
         <button
           onClick={startCall}
-          className="bg-green-500 text-white px-6 py-2 rounded-xl hover:bg-green-600"
+          className="bg-green-500 text-white px-6 py-2 rounded-xl hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isLoadingReports || !contextText || !hasFetchedContext}
         >
-          📞 Start Call
+          {isLoadingReports ? "Loading reports..." : "📞 Start Call"}
         </button>
       ) : (
         <button
