@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-// import VoiceDoctor from "@/components/VoiceDoctor";
+import VoiceDoctor from "@/components/VoiceDoctor";
 
 export default function ClinicsPage() {
   const [clinics, setClinics] = useState([]);
@@ -72,9 +72,9 @@ export default function ClinicsPage() {
           </div>
         ))}
       </div>
-      {/* <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen">
       <VoiceDoctor />
-    </div> */}
+    </div>
     </div>
   );
 }
